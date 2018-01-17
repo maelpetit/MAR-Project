@@ -32,7 +32,7 @@ function start()
 	
 	// car Position
 	var CARx = -220; 
-	var CARy = 0 ; 
+	var CARy = 100 ;
 	var CARz = 0 ;
 	var CARtheta = 0 ; 
 
@@ -50,8 +50,6 @@ function start()
 	var camera3 = {x:100,y:0};
 	var camera5 = {x:300,y:-100};
 	var camera8 = {x:-120,y:-60} ;
-	var camera9 = {x:-60,y:-300} ;
-	var camera10 = {x:-200,y:-180} ;
 	cameraSet[0] = cameraSet[1] = cameraSet[2] = cameraSet[3] = cameraSet[4] =  camera1 ;
 	cameraSet[5] = 	cameraSet[6] = camera3 ;
 	cameraSet[7] = 	cameraSet[8] = camera3 ;
@@ -101,12 +99,9 @@ function start()
 	// simple method to load an object
 	var carGeometry = Loader.load({filename: 'assets/car_Zup_01.obj', node: carRotationZ, name: 'car3'}) ;
 	carGeometry.position.z= +0.25 ;
-	// attach the scene camera to car
-//	carGeometry.add(renderingEnvironment.camera) ;
-	// renderingEnvironment.camera.position.x = 0.0 ;
-	// renderingEnvironment.camera.position.z = 10.0 ;
-	// renderingEnvironment.camera.position.y = -25.0 ;
-	// renderingEnvironment.camera.rotation.x = 0.0 ;
+
+	var cameraPivot = new THREE.Object3D();
+	carGeometry.add(cameraPivot);
 		
 	//	Skybox
 	Loader.loadSkyBox('assets/maps',['px','nx','py','ny','pz','nz'],'jpg', renderingEnvironment.scene, 'sky',4000);
@@ -159,21 +154,16 @@ function start()
 	window.addEventListener( 'resize', onWindowResize, false );
 	//	keyboard callbacks 
 	document.onkeydown = handleKeyDown;
-	document.onkeyup = handleKeyUp;					
-
+	document.onkeyup = handleKeyUp;
+	var speedDiv = document.getElementById("speed");
+	var wrongDirectionDiv = document.getElementById("wrong-direction");
+	var prevPlane = NAV.findActive(NAV.x, NAV.y);
 	//	callback functions
 	//	---------------------------------------------------------------------------
-	function handleKeyDown(event) { 
-		console.log(event.keyCode);
+	function handleKeyDown(event) {
 		if(event.keyCode == 80)
 		{
-			if(cinematic){
-				setEmbeddedCamera();
-			}else{
-				carGeometry.remove(renderingEnvironment.camera) ;
-			}
-			cinematic = !cinematic;
-			
+		    switchCamera();
 		}else{
 			currentlyPressedKeys[event.keyCode] = true;
 		}
@@ -206,8 +196,17 @@ function start()
 		}
 	}
 
+	function switchCamera(){
+        if(cinematic){
+            setEmbeddedCamera();
+        }else{
+            carGeometry.remove(renderingEnvironment.camera) ;
+        }
+        cinematic = !cinematic;
+    }
+
 	function setEmbeddedCamera(){
-		carGeometry.add(renderingEnvironment.camera) ;
+        cameraPivot.add(renderingEnvironment.camera) ;
 		//renderingEnvironment.camera.up = new THREE.Vector3(0,0,1);
 		renderingEnvironment.camera.position.x = 0.0 ;
 		renderingEnvironment.camera.position.z = 10.0 ;
@@ -234,7 +233,15 @@ function start()
 		var oldPosition = vehicle.position.clone() ;
 		vehicle.update(1.0/60) ;
 		var newPosition = vehicle.position.clone() ;
-		newPosition.sub(oldPosition) ;
+
+		//var xDiff = newPosition.x - oldPosition.x;
+		//var yDiff = newPosition.y - oldPosition.y;
+		//var zDiff = newPosition.z - oldPosition.z;
+        //console.log(Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2) + Math.pow(zDiff, 2)));
+        //console.log(Math.floor(Math.sqrt(Math.pow(newPosition.x - oldPosition.x, 2) + Math.pow(newPosition.y - oldPosition.y, 2) + Math.pow(newPosition.z - oldPosition.z, 2))));
+
+        newPosition.sub(oldPosition) ;
+
 		// NAV
 		NAV.move(newPosition.x, newPosition.y, 150,10) ;
 		// carPosition
@@ -251,20 +258,35 @@ function start()
 		// renderingEnvironment.camera.position.x = NAV.x ;
 		// renderingEnvironment.camera.position.y = NAV.y ;
 		// renderingEnvironment.camera.position.z = NAV.z+50+vehicle.speed.length()*2 ;
+        var plane = NAV.findActive(NAV.x, NAV.y);
 		if(cinematic)
 		{
-			var plane = NAV.findActive(NAV.x, NAV.y);
 			renderingEnvironment.camera.position.x = cameraSet[plane].x ;
 			renderingEnvironment.camera.position.y = cameraSet[plane].y ;
 			renderingEnvironment.camera.position.z = NAV.z + cameraZ ;
 			renderingEnvironment.camera.up = new THREE.Vector3(0,0,1);
 			renderingEnvironment.camera.lookAt(NAV);
-		}
-		//console.log(vehicle.speed.z) ;
-//		renderingEnvironment.camera.rotation.z = vehicle.angles.z-Math.PI/2.0 ;
+		}else{
+            var pivot = vehicle.angularSpeed.z / 9;
+		    cameraPivot.rotation.z = pivot > Math.PI / 2 ? Math.PI / 2 : pivot < - Math.PI / 2 ? - Math.PI / 2 : pivot;
+		    renderingEnvironment.camera.up = renderingEnvironment.up;
+        }
+		if(prevPlane == 0 && plane == 29){
+            wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
+        }else if(prevPlane == 29 && plane == 0){
+            wrongDirectionDiv.innerHTML = '';
+        }else if(prevPlane != 29 && plane != 0 && plane > prevPlane){
+            wrongDirectionDiv.innerHTML = '';
+        }else if(prevPlane != 0 && plane != 29 && plane < prevPlane ){
+		    wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
+        }
+
+
+        speedDiv.innerHTML = 'Speed : ' + Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
 		// Rendering
-		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera); 
-	};
+		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera);
+		prevPlane = plane;
+	}
 
 	render(); 
 }
