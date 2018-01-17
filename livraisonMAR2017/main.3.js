@@ -200,7 +200,7 @@ function start()
         if(cinematic){
             setEmbeddedCamera();
         }else{
-            carGeometry.remove(renderingEnvironment.camera) ;
+            cameraPivot.remove(renderingEnvironment.camera) ;
         }
         cinematic = !cinematic;
     }
