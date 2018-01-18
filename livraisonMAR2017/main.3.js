@@ -6,12 +6,12 @@
 requirejs(['ModulesLoaderV2.js'], function()
 		{ 
 			// Level 0 includes
-			ModulesLoader.requireModules(["threejs/three.min.js"]) ;
-			ModulesLoader.requireModules([ "myJS/ThreeRenderingEnv.js", 
-			                              "myJS/ThreeLightingEnv.js", 
-			                              "myJS/ThreeLoadingEnv.js", 
-			                              "myJS/navZ.js",
-			                              "FlyingVehicle.js"]) ;
+			ModulesLoader.requireModules(['threejs/three.min.js']) ;
+			ModulesLoader.requireModules([ 'myJS/ThreeRenderingEnv.js',
+			                              'myJS/ThreeLightingEnv.js',
+			                              'myJS/ThreeLoadingEnv.js',
+			                              'myJS/navZ.js',
+			                              'FlyingVehicle.js']) ;
 			// Loads modules contained in includes and starts main function
 			ModulesLoader.loadModules(start) ;
 		}
@@ -141,6 +141,20 @@ function start()
 	NAV.addPlane(	new navPlane('p30', -240, -180, -140, -80,	+0,+20,'ny')); 		// 30			
 	NAV.setPos(CARx,CARy,CARz);
 
+	var nbCheckpoints = 3; //{1, 12, 23}
+	var checkpoints = [];
+	var nbLaps = 0;
+	function resetCheckpoints(){
+		for(var i = 0; i < nbCheckpoints; i++){
+			checkpoints[i] = false;
+		}
+	}
+
+	var clock = new THREE.Clock(false);
+    var lastLapTime = 0;
+
+	resetCheckpoints();
+
 	var cinematic = false;
 	setEmbeddedCamera();
 	NAV.initActive();
@@ -155,9 +169,12 @@ function start()
 	//	keyboard callbacks 
 	document.onkeydown = handleKeyDown;
 	document.onkeyup = handleKeyUp;
-	var speedDiv = document.getElementById("speed");
-	var wrongDirectionDiv = document.getElementById("wrong-direction");
-	var prevPlane = NAV.findActive(NAV.x, NAV.y);
+	var speedDiv = document.getElementById('speed');
+	var wrongDirectionDiv = document.getElementById('wrong-direction');
+	var clockDiv = document.getElementById('clock');
+	var timeBoardDiv = document.getElementById('time-board');
+	var timeBoardString = '';
+	var prevPlane = 0;
 	//	callback functions
 	//	---------------------------------------------------------------------------
 	function handleKeyDown(event) {
@@ -222,7 +239,7 @@ function start()
 		renderingEnvironment.onWindowResize(window.innerWidth,window.innerHeight);
 	}
 
-	function render() { 
+	function render() {
 		requestAnimationFrame( render );
 		handleKeys();
 		// Vehicle stabilization 
@@ -258,7 +275,7 @@ function start()
 		// renderingEnvironment.camera.position.x = NAV.x ;
 		// renderingEnvironment.camera.position.y = NAV.y ;
 		// renderingEnvironment.camera.position.z = NAV.z+50+vehicle.speed.length()*2 ;
-        var plane = NAV.findActive(NAV.x, NAV.y);
+        var plane = parseInt(NAV.findActive(NAV.x, NAV.y), 10);
 		if(cinematic)
 		{
 			renderingEnvironment.camera.position.x = cameraSet[plane].x ;
@@ -271,18 +288,42 @@ function start()
 		    cameraPivot.rotation.z = pivot > Math.PI / 2 ? Math.PI / 2 : pivot < - Math.PI / 2 ? - Math.PI / 2 : pivot;
 		    renderingEnvironment.camera.up = renderingEnvironment.up;
         }
-		if(prevPlane == 0 && plane == 29){
+        if(plane === 1 || plane === 12 || plane === 23){
+			var index = Math.floor(plane / 10);
+			if((index !== 0 && checkpoints[index - 1]) || index === 0) {
+                checkpoints[index] = true;
+            }
+		}
+		if(prevPlane === 0 && plane === 29){
             wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
-        }else if(prevPlane == 29 && plane == 0){
+        }else if(prevPlane === 29 && plane === 0){
             wrongDirectionDiv.innerHTML = '';
-        }else if(prevPlane != 29 && plane != 0 && plane > prevPlane){
+        }else if(plane > prevPlane){
             wrongDirectionDiv.innerHTML = '';
-        }else if(prevPlane != 0 && plane != 29 && plane < prevPlane ){
+            if(plane === 1) {
+                if(!clock.running){
+                    clock.start();
+                }
+                var lapOK = true;
+                for (var i = 0; i < nbCheckpoints && lapOK; i++) {
+                    if (!checkpoints[i]) {
+                        lapOK = false;
+                    }
+                }
+                if (lapOK) {
+                    resetCheckpoints();
+                    nbLaps++;
+                    var lapTime = clock.getElapsedTime();
+                    timeBoardString += 'Lap ' + nbLaps + ' : ' + Math.floor((lapTime - lastLapTime) * 100) / 100 + '\n';
+                    lastLapTime = lapTime;
+                }
+            }
+        }else if(plane < prevPlane ){
 		    wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
         }
-
-
         speedDiv.innerHTML = 'Speed : ' + Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
+		clockDiv.innerText = Math.floor(clock.getElapsedTime() * 100) / 100 + '';
+		timeBoardDiv.innerText = timeBoardString;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera);
 		prevPlane = plane;
