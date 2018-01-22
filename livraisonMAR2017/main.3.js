@@ -40,7 +40,7 @@ function start()
 	var vehicle = new FlyingVehicle(
 			{
 				position: new THREE.Vector3(CARx, CARy, CARz),
-				zAngle : CARtheta+Math.PI/2.0,
+				zAngle : CARtheta+Math.PI/2.0
 			}
 			) ;
 	const cameraZ = 200;
@@ -60,6 +60,9 @@ function start()
 	cameraSet[21] = cameraSet[22] = cameraSet[23] = cameraSet[24] = cameraSet[25] = camera8 ;
 	cameraSet[26] = cameraSet[27] = cameraSet[28] = camera8 ;
 	cameraSet[29] = camera1;
+
+    google.charts.load('current', {'packages':['gauge']});
+    google.charts.setOnLoadCallback(drawChart);
  	
 	//	rendering env
 	var renderingEnvironment =  new ThreeRenderingEnv();
@@ -150,6 +153,8 @@ function start()
 		}
 	}
 
+	var totalLaps = 1;
+
 	var clock = new THREE.Clock(false);
     var lastLapTime = 0;
 
@@ -169,11 +174,10 @@ function start()
 	//	keyboard callbacks 
 	document.onkeydown = handleKeyDown;
 	document.onkeyup = handleKeyUp;
-	var speedDiv = document.getElementById('speed');
 	var wrongDirectionDiv = document.getElementById('wrong-direction');
 	var clockDiv = document.getElementById('clock');
 	var timeBoardDiv = document.getElementById('time-board');
-	var timeBoardString = '';
+	var timeBoardString = 'Laps :\n';
 	var prevPlane = 0;
 	//	callback functions
 	//	---------------------------------------------------------------------------
@@ -232,6 +236,32 @@ function start()
 		renderingEnvironment.camera.rotation.z = 0 ;
 		renderingEnvironment.camera.rotation.x = 85.0*3.14159/180.0 ;
 	}
+
+	var speed = 0;
+
+    function drawChart() {
+
+        var data = google.visualization.arrayToDataTable([
+            ['Label', 'Value'],
+            ['Speed', 0]
+        ]);
+
+        var options = {
+            width: 400, height: 120,
+            redFrom: 210, redTo: 250,
+            yellowFrom:160, yellowTo: 210,
+            minorTicks: 5, max: 250
+        };
+
+        var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
+
+        chart.draw(data, options);
+
+        setInterval(function() {
+            data.setValue(0, 1, speed);
+            chart.draw(data, options);
+        }, 100);
+    }
 
 	//	window resize
 	function  onWindowResize() 
@@ -314,15 +344,15 @@ function start()
                     resetCheckpoints();
                     nbLaps++;
                     var lapTime = clock.getElapsedTime();
-                    timeBoardString += 'Lap ' + nbLaps + ' : ' + Math.floor((lapTime - lastLapTime) * 100) / 100 + '\n';
+                    timeBoardString +=   nbLaps + ' : ' + Math.floor((lapTime - lastLapTime) * 100) / 100 + '\n';
                     lastLapTime = lapTime;
                 }
             }
         }else if(plane < prevPlane ){
 		    wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
         }
-        speedDiv.innerHTML = 'Speed : ' + Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
-		clockDiv.innerText = Math.floor(clock.getElapsedTime() * 100) / 100 + '';
+        speed = Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
+        clockDiv.innerText = Math.floor(clock.getElapsedTime() * 100) / 100 + '';
 		timeBoardDiv.innerText = timeBoardString;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera);

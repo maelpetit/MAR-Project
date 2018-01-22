@@ -9,34 +9,40 @@
         .overlay{
             z-index: 200;
             position: absolute;
-            top: 10px;
-            width: 100%;
-            display:block;
-            text-align: center;
+            display: block;
         }
         .warning{
             color: red;
             line-height: 200%;
-        }
-        .top30px{
-            top: 30px;
-        }
-        .top60px{
             top: 60px;
+            text-align: center;
+            width: 100%;
+            font-weight: bold;
         }
-        .right100px{
-            right: 100px;
+        .clock{
+            background-color: lightgray;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            width: 100px;
+            text-align: center;
         }
-        .left150px{
-            left: 150px;
+        .time-board{
+            background-color: lightgray;
+            right: 20px;
+            top: 80px;
+            width: 100px;
+            padding: 15px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-<script data-main="main.3.js" src="lib/require.js"></script>
-<div id="speed" class="overlay">Speed : </div>
-<div id="clock" class="overlay right100px"></div>
-<div id="time-board" class="overlay left150px"></div>
-<div id="wrong-direction" class="overlay warning top60px"></div>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script data-main="main.3.js" src="lib/require.js"></script>
+    <div id="clock" class="overlay clock"></div>
+    <div id="time-board" class="overlay time-board"></div>
+    <div id="wrong-direction" class="overlay warning"></div>
+    <div id="chart_div" class="overlay"></div>
 </body>
 </html>
