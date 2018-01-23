@@ -45,6 +45,30 @@ function start()
 
 	var helico_rotationZ = new THREE.Object3D();
 	helico_position.add(helico_rotationZ);
+
+    var helico_left_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_left_turbine.position.x = -8.5;
+    helico_left_turbine.position.y = -3;
+    helico_left_turbine.position.z = 4;
+
+
+    var helico_right_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_right_turbine.position.x = 8.5;
+    helico_right_turbine.position.y = -3;
+    helico_right_turbine.position.z = 4;
+
+	var helico_central_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_central_turbine.position.x = 0;
+    helico_central_turbine.position.y = 0;
+    helico_central_turbine.position.z = 4;
+    helico_central_turbine.rotation.x = Math.PI / 2;
+
+	var helico_central_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
+	helico_central_axis.position.x = 0;
+    helico_central_axis.position.y = 0;
+    helico_central_axis.position.z = 5;
+    helico_central_axis.rotation.x = Math.PI / 2;
+
 	var helico_body = Loader.load({filename:"assets/helico/helicoCorp.obj", node: helico_rotationZ});
 
 	// Camera setup
