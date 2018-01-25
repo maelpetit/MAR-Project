@@ -14,7 +14,10 @@ requirejs(['ModulesLoaderV2.js'], function()
 				"myJS/navZ.js",
 				"FlyingVehicle.js"
 			]) ;
-			ModulesLoader.requireModules(["ParticleSystem.js"]);
+			ModulesLoader.requireModules([
+				"ParticleSystem.js",
+				"Interpolators.js"
+			]);
 			// Loads modules contained in includes and starts main function
 			ModulesLoader.loadModules(start) ;
 		}
@@ -42,6 +45,14 @@ function start()
 
 	var clock = new THREE.Clock(true);
 
+	var object = new THREE.Object3D({
+		position : {
+			x : 0,
+			y : 0,
+			z : 0
+		}
+	});
+
 	var particleSystem = new ParticleSystem.Engine_Class({
         textureFile : "assets/particles/particle.png",
 		particlesCount : 10000,
@@ -67,8 +78,16 @@ function start()
 	particleSystem.addModifier(new ParticleSystem.LifeTimeModifier_Class());
 	particleSystem.addModifier(new ParticleSystem.ForceModifier_Weight_Class());
 	particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
+	particleSystem.addModifier(new ParticleSystem.OpacityModifier_TimeToDeath_Class(
+		new Interpolators.Linear_Class(1,0)
+	));
+	particleSystem.addModifier(new ParticleSystem.ColorModifier_TimeToDeath_Class(
+        {r:1,g:0,b:0},{r:1,g:1,b:1}
+	));
 
-	renderingEnvironment.addToScene(particleSystem.particleSystem);
+	object.add(particleSystem.particleSystem);
+
+	renderingEnvironment.addToScene(object);
 
 	/*var node = new THREE.Object3D({
 		position : {
@@ -124,7 +143,7 @@ function start()
 		}
 		if (currentlyPressedKeys[83]) // (S) Down 
 		{
-			renderingEnvironment.scene.rotateOnAxis(new THREE.Vector3(1.0,0.0,0.0), -rotationIncrement) ;
+			renderingEnvironment.scene.rotateOnAxis(new THREE.Vector3(1.0, 0.0, 0.0), -rotationIncrement) ;
 		}
 	}
 
@@ -138,6 +157,7 @@ function start()
 		requestAnimationFrame( render );
 		handleKeys();
 		particleSystem.animate(clock.getDelta(), renderingEnvironment);
+		object.rotation.z += 0.02;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera); 
 	}

@@ -456,7 +456,7 @@ ParticleSystem.OpacityModifier_TimeToDeath_Class = function(interpolator)
 ParticleSystem.SizeModifier_TimeToDeath_Class = function(interpolator)
 {
 	Interpolators.Class_Requirements(interpolator) ;
-	this.interpolato = interpolator ;
+	this.interpolator = interpolator ;
 	
 	this.apply = function(particle, dt)
 	{
