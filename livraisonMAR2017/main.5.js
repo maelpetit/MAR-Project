@@ -40,16 +40,48 @@ function start()
 	//	Loading env
 	var Loader = new ThreeLoadingEnv();
 
-	var particleSystem = new ParticleSystem.Engine_Class();
+	var clock = new THREE.Clock(true);
 
-	particleSystem.particlesCount = 10000;
-	particleSystem.particleTextureFile = "assets/particles/particle.png";
-	particleSystem.blendingMode = THREE.AdditiveBlending;
+	var particleSystem = new ParticleSystem.Engine_Class({
+        textureFile : "assets/particles/particle.png",
+		particlesCount : 10000,
+		blendingMode : THREE.AdditiveBlending
+	});
 
-	// particleSystem.addEmitter(new ParticleSystem.ConeEmitter_Class());
+    var emitter = new ParticleSystem.ConeEmitter_Class({
+        cone: {
+            center: new THREE.Vector3(0,0,0),
+        	height: new THREE.Vector3(0,0,1),
+    		radius: 1,
+    		flow: 1000
+		},
+    	particle: {
+			speed: new MathExt.Interval_Class(5, 15),
+			mass: new MathExt.Interval_Class(0.1, 0.3),
+			size: new MathExt.Interval_Class(0.1, 1),
+			lifeTime: new MathExt.Interval_Class(1, 7)
+    	}
+	});
 
-	// particleSystem.addModifier(new ParticleSystem.LifeTimeModifier_Class());
-	// particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
+    particleSystem.addEmitter(emitter);
+	particleSystem.addModifier(new ParticleSystem.LifeTimeModifier_Class());
+	particleSystem.addModifier(new ParticleSystem.ForceModifier_Weight_Class());
+	particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
+
+	renderingEnvironment.addToScene(particleSystem.particleSystem);
+
+	/*var node = new THREE.Object3D({
+		position : {
+			x : 0,
+			y : 0,
+			z : 0
+		}
+	});
+    Loader.load({
+        filename : "assets/helico/helicoCorp.obj",
+        node : node
+    });
+	renderingEnvironment.addToScene(node);*/
 
 	// Camera setup
 	renderingEnvironment.camera.position.x = 0 ;
@@ -105,8 +137,7 @@ function start()
 	function render() { 
 		requestAnimationFrame( render );
 		handleKeys();
-		console.log(THREE.timeElapsed);
-		//particleSystem.animate(THREE.timeElapsed, renderingEnvironment);
+		particleSystem.animate(clock.getDelta(), renderingEnvironment);
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera); 
 	}

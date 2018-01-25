@@ -5,7 +5,7 @@ if(typeof(ModulesLoader)=="undefined")
 }
 
 // Loads dependencies and initializes this module
-ModulesLoader.requireModules(['lib/three.min.js', 'Physics.js', 'ThreeRenderer.js', 'MathExt.js', 'DebugHelper.js']) ;
+ModulesLoader.requireModules(['threejs/three.min.js', 'Physics.js', 'myJS/ThreeRenderingEnv.js', 'MathExt.js', 'DebugHelper.js']) ;
 
 var ParticleSystem = {} ;
 
