@@ -105,8 +105,77 @@ function start()
 
 	var cameraPivot = new THREE.Object3D();
 	carGeometry.add(cameraPivot);
-		
-	//	Skybox
+
+	var HELICOx = 0;
+	var HELICOy = 0;
+	var HELICOz = 200;
+
+    var helico = new FlyingVehicle(
+        {
+            position: new THREE.Vector3(HELICOx, HELICOy, HELICOz),
+            zAngle : 0
+        }
+    ) ;
+
+    var helico_position = new THREE.Object3D();
+    renderingEnvironment.addToScene(helico_position);
+    helico_position.position.x = 0;
+    helico_position.position.y = 0;
+    helico_position.position.z = 200;
+
+    var helico_rotationZ = new THREE.Object3D();
+    helico_position.add(helico_rotationZ);
+
+    var helico_left_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_left_turbine.position.x = -8.5;
+    helico_left_turbine.position.y = -3;
+    helico_left_turbine.position.z = 4;
+
+    var helico_left_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
+    helico_left_axis.position.x = -8.5;
+    helico_left_axis.position.y = -2;
+    helico_left_axis.position.z = 4;
+
+    var helico_right_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_right_turbine.position.x = 8.5;
+    helico_right_turbine.position.y = -3;
+    helico_right_turbine.position.z = 4;
+
+    var helico_right_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
+    helico_right_axis.position.x = 8.5;
+    helico_right_axis.position.y = -2;
+    helico_right_axis.position.z = 4;
+
+    var helico_central_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
+    helico_central_turbine.position.x = 0;
+    helico_central_turbine.position.y = 0;
+    helico_central_turbine.position.z = 4;
+    helico_central_turbine.rotation.x = Math.PI / 2;
+
+    var helico_central_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
+    helico_central_axis.position.x = 0;
+    helico_central_axis.position.y = 0;
+    helico_central_axis.position.z = 5;
+    helico_central_axis.rotation.x = Math.PI / 2;
+
+    var nbBlades = 3;
+
+    for(var i = 0; i < nbBlades; i++){
+        var angle = (i + 1)*(2 * Math.PI / nbBlades);
+        var right_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_right_axis});
+        right_blade.position.y = 2;
+        right_blade.rotation.y = angle;
+        var left_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_left_axis});
+        left_blade.position.y = 2;
+        left_blade.rotation.y = angle;
+        var central_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_central_axis});
+        central_blade.position.y = 2;
+        central_blade.rotation.y = angle;
+    }
+
+    var helico_body = Loader.load({filename:"assets/helico/helicoCorp.obj", node: helico_rotationZ});
+
+    //	Skybox
 	Loader.loadSkyBox('assets/maps',['px','nx','py','ny','pz','nz'],'jpg', renderingEnvironment.scene, 'sky',4000);
 
 	//	Planes Set for Navigation 
@@ -160,7 +229,7 @@ function start()
 
 	resetCheckpoints();
 
-	var cinematic = false;
+	var camera_index = 0; // 0 => car, 1 => helico, 2 => cinematic
 	setEmbeddedCamera();
 	NAV.initActive();
 	// DEBUG
@@ -218,23 +287,36 @@ function start()
 	}
 
 	function switchCamera(){
-        if(cinematic){
+		camera_index = (camera_index + 1) % 3;
+		if(camera_index === 0){
             setEmbeddedCamera();
-        }else{
-            cameraPivot.remove(renderingEnvironment.camera) ;
-        }
-        cinematic = !cinematic;
+		}else if(camera_index === 1){
+            cameraPivot.remove(renderingEnvironment.camera);
+			setHelicoCamera();
+		}else{
+			helico_body.remove(renderingEnvironment.camera);
+		}
     }
 
+    function setHelicoCamera(){
+		helico_body.add(renderingEnvironment.camera);
+        renderingEnvironment.camera.position.x = 0.0;
+        renderingEnvironment.camera.position.z = 40.0;
+        renderingEnvironment.camera.position.y = -5.0;
+        renderingEnvironment.camera.rotation.y = 0;
+        renderingEnvironment.camera.rotation.z = 0;
+        renderingEnvironment.camera.rotation.x = 30.0*Math.PI/180.0;
+	}
+
 	function setEmbeddedCamera(){
-        cameraPivot.add(renderingEnvironment.camera) ;
+        cameraPivot.add(renderingEnvironment.camera);
 		//renderingEnvironment.camera.up = new THREE.Vector3(0,0,1);
-		renderingEnvironment.camera.position.x = 0.0 ;
-		renderingEnvironment.camera.position.z = 10.0 ;
-		renderingEnvironment.camera.position.y = -25.0 ;
-		renderingEnvironment.camera.rotation.y = 0 ;
-		renderingEnvironment.camera.rotation.z = 0 ;
-		renderingEnvironment.camera.rotation.x = 85.0*3.14159/180.0 ;
+		renderingEnvironment.camera.position.x = 0.0;
+		renderingEnvironment.camera.position.z = 10.0;
+		renderingEnvironment.camera.position.y = -25.0;
+		renderingEnvironment.camera.rotation.y = 0;
+		renderingEnvironment.camera.rotation.z = 0;
+		renderingEnvironment.camera.rotation.x = 85.0*Math.PI/180.0;
 	}
 
 	var speed = 0;
@@ -280,13 +362,6 @@ function start()
 		var oldPosition = vehicle.position.clone() ;
 		vehicle.update(1.0/60) ;
 		var newPosition = vehicle.position.clone() ;
-
-		//var xDiff = newPosition.x - oldPosition.x;
-		//var yDiff = newPosition.y - oldPosition.y;
-		//var zDiff = newPosition.z - oldPosition.z;
-        //console.log(Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2) + Math.pow(zDiff, 2)));
-        //console.log(Math.floor(Math.sqrt(Math.pow(newPosition.x - oldPosition.x, 2) + Math.pow(newPosition.y - oldPosition.y, 2) + Math.pow(newPosition.z - oldPosition.z, 2))));
-
         newPosition.sub(oldPosition) ;
 
 		// NAV
@@ -301,19 +376,22 @@ function start()
 		carFloorSlope.matrix.copy(NAV.localMatrix(CARx,CARy));
 		// Updates carRotationZ
 		carRotationZ.rotation.z = vehicle.angles.z-Math.PI/2.0 ;
-		// Camera
-		// renderingEnvironment.camera.position.x = NAV.x ;
-		// renderingEnvironment.camera.position.y = NAV.y ;
-		// renderingEnvironment.camera.position.z = NAV.z+50+vehicle.speed.length()*2 ;
+
+		var helico_speed = Math.floor(Math.sqrt(Math.pow(helico.speed.x, 2) + Math.pow(helico.speed.y, 2) + Math.pow(helico.speed.z, 2)));
+        var delta_rotation_speed = 0.2 + helico_speed * 0.1;
+		helico_central_axis.rotation.y += delta_rotation_speed;
+        helico_right_axis.rotation.y += delta_rotation_speed;
+        helico_left_axis.rotation.y += delta_rotation_speed;
+
         var plane = parseInt(NAV.findActive(NAV.x, NAV.y), 10);
-		if(cinematic)
+		if(camera_index === 2)
 		{
 			renderingEnvironment.camera.position.x = cameraSet[plane].x ;
 			renderingEnvironment.camera.position.y = cameraSet[plane].y ;
 			renderingEnvironment.camera.position.z = NAV.z + cameraZ ;
 			renderingEnvironment.camera.up = new THREE.Vector3(0,0,1);
 			renderingEnvironment.camera.lookAt(NAV);
-		}else{
+		}else if(camera_index === 0){
             var pivot = vehicle.angularSpeed.z / 9;
 		    cameraPivot.rotation.z = pivot > Math.PI / 2 ? Math.PI / 2 : pivot < - Math.PI / 2 ? - Math.PI / 2 : pivot;
 		    renderingEnvironment.camera.up = renderingEnvironment.up;
