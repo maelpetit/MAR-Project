@@ -16,7 +16,8 @@ requirejs(['ModulesLoaderV2.js'], function()
 			]) ;
 			ModulesLoader.requireModules([
 				"ParticleSystem.js",
-				"Interpolators.js"
+				"Interpolators.js",
+				"myJS/ParticleSystemFactory.js"
 			]);
 			// Loads modules contained in includes and starts main function
 			ModulesLoader.loadModules(start) ;
@@ -46,47 +47,32 @@ function start()
 	var clock = new THREE.Clock(true);
 
 	var object = new THREE.Object3D({
-		position : {
-			x : 0,
-			y : 0,
-			z : 0
+		position:{
+			x: 0,
+			y: 0,
+			z: 0
 		}
 	});
 
-	var particleSystem = new ParticleSystem.Engine_Class({
-        textureFile : "assets/particles/particle.png",
-		particlesCount : 10000,
-		blendingMode : THREE.AdditiveBlending
-	});
+	var particleSystems = [];
 
-    var emitter = new ParticleSystem.ConeEmitter_Class({
-        cone: {
-            center: new THREE.Vector3(0,0,0),
-        	height: new THREE.Vector3(0,0,1),
-    		radius: 1,
-    		flow: 1000
-		},
-    	particle: {
-			speed: new MathExt.Interval_Class(5, 15),
-			mass: new MathExt.Interval_Class(0.1, 0.3),
-			size: new MathExt.Interval_Class(0.1, 1),
-			lifeTime: new MathExt.Interval_Class(1, 7)
-    	}
-	});
+	// var ps1 = createParticleSystem1();
+	// object.add(ps1.particleSystem);
+	// particleSystems.push(ps1);
 
-    particleSystem.addEmitter(emitter);
-	particleSystem.addModifier(new ParticleSystem.LifeTimeModifier_Class());
-	particleSystem.addModifier(new ParticleSystem.ForceModifier_Weight_Class());
-	particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
-	particleSystem.addModifier(new ParticleSystem.OpacityModifier_TimeToDeath_Class(
-		new Interpolators.Linear_Class(1,0)
-	));
-	particleSystem.addModifier(new ParticleSystem.ColorModifier_TimeToDeath_Class(
-        {r:1,g:0,b:0},{r:1,g:1,b:1}
-	));
+	function addParticleSystem(func){
+		var ps = func({
+            x:0,y:0,z:0
+        });
+        object.add(ps.particleSystem);
+        particleSystems.push(ps);
+	}
 
-	object.add(particleSystem.particleSystem);
-
+	// addParticleSystem(createParticleSystem1);
+    // addParticleSystem(createTurboFireParticleSystem);
+	// addParticleSystem(createJetFireParticleSystem);
+	// addParticleSystem(createSmokeParticleSystem);
+	addParticleSystem(createWaterFountainParticleSystem);
 	renderingEnvironment.addToScene(object);
 
 	/*var node = new THREE.Object3D({
@@ -156,8 +142,11 @@ function start()
 	function render() { 
 		requestAnimationFrame( render );
 		handleKeys();
-		particleSystem.animate(clock.getDelta(), renderingEnvironment);
-		object.rotation.z += 0.02;
+		var deltaTime = clock.getDelta();
+		particleSystems.forEach(function(ps){
+			ps.animate(deltaTime, renderingEnvironment);
+		});
+		// object.rotation.z += 0.02;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera); 
 	}

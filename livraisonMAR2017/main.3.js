@@ -7,11 +7,14 @@ requirejs(['ModulesLoaderV2.js'], function()
 		{ 
 			// Level 0 includes
 			ModulesLoader.requireModules(['threejs/three.min.js']) ;
-			ModulesLoader.requireModules([ 'myJS/ThreeRenderingEnv.js',
-			                              'myJS/ThreeLightingEnv.js',
-			                              'myJS/ThreeLoadingEnv.js',
-			                              'myJS/navZ.js',
-			                              'FlyingVehicle.js']) ;
+			ModulesLoader.requireModules([
+			    'myJS/ThreeRenderingEnv.js',
+                'myJS/ThreeLightingEnv.js',
+                'myJS/ThreeLoadingEnv.js',
+                'myJS/navZ.js',
+                'FlyingVehicle.js',
+                "myJS/ParticleSystemFactory.js"
+            ]) ;
 			// Loads modules contained in includes and starts main function
 			ModulesLoader.loadModules(start) ;
 		}
@@ -61,8 +64,8 @@ function start()
 	cameraSet[26] = cameraSet[27] = cameraSet[28] = camera8 ;
 	cameraSet[29] = camera1;
 
-    google.charts.load('current', {'packages':['gauge']});
-    google.charts.setOnLoadCallback(drawChart);
+    // google.charts.load('current', {'packages':['gauge']});
+    // google.charts.setOnLoadCallback(drawChart);
  	
 	//	rendering env
 	var renderingEnvironment =  new ThreeRenderingEnv();
@@ -72,6 +75,8 @@ function start()
 
 	//	Loading env
 	var Loader = new ThreeLoadingEnv();
+
+	var particleSystems = [];
 
 	//	Meshes
 	Loader.loadMesh('assets','border_Zup_02','obj',	renderingEnvironment.scene,'border',	-340,-340,0,'front');
@@ -103,8 +108,19 @@ function start()
 	var carGeometry = Loader.load({filename: 'assets/car_Zup_01.obj', node: carRotationZ, name: 'car3'}) ;
 	carGeometry.position.z= +0.25 ;
 
+    addParticlesToCar(carGeometry, particleSystems);
+    // var fountain = createWaterFountainParticleSystem({x:-137,y:-8,z:100});
+    // particleSystems.push({name:"fountain", particles:fountain});
+    // renderingEnvironment.addToScene(fountain.particleSystem);
+
 	var cameraPivot = new THREE.Object3D();
 	carGeometry.add(cameraPivot);
+
+	var particlesPlaceHolder = new THREE.Object3D({
+        position:{
+            x:0,y:0,z:-100
+        }
+    });
 
 	var HELICOx = 0;
 	var HELICOy = 0;
@@ -119,9 +135,9 @@ function start()
 
     var helico_position = new THREE.Object3D();
     renderingEnvironment.addToScene(helico_position);
-    helico_position.position.x = 0;
-    helico_position.position.y = 0;
-    helico_position.position.z = 200;
+    helico_position.position.x = HELICOx;
+    helico_position.position.y = HELICOy;
+    helico_position.position.z = HELICOz;
 
     var helico_rotationZ = new THREE.Object3D();
     helico_position.add(helico_rotationZ);
@@ -224,12 +240,13 @@ function start()
 
 	var totalLaps = 1;
 
-	var clock = new THREE.Clock(false);
+	var clock = new THREE.Clock(true);
+	var timer = new THREE.Clock(false);
     var lastLapTime = 0;
 
 	resetCheckpoints();
 
-	var camera_index = 0; // 0 => car, 1 => helico, 2 => cinematic
+	var camera_mode = 0; // 0 => car, 1 => helico, 2 => cinematic
 	setEmbeddedCamera();
 	NAV.initActive();
 	// DEBUG
@@ -244,14 +261,14 @@ function start()
 	document.onkeydown = handleKeyDown;
 	document.onkeyup = handleKeyUp;
 	var wrongDirectionDiv = document.getElementById('wrong-direction');
-	var clockDiv = document.getElementById('clock');
+	var timerDiv = document.getElementById('timer');
 	var timeBoardDiv = document.getElementById('time-board');
 	var timeBoardString = 'Laps :\n';
 	var prevPlane = 0;
 	//	callback functions
 	//	---------------------------------------------------------------------------
-	function handleKeyDown(event) {
-		if(event.keyCode == 80)
+	function handleKeyDown(event) {//65 69
+		if(event.keyCode === 80)
 		{
 		    switchCamera();
 		}else{
@@ -270,27 +287,53 @@ function start()
 		}				
 		if (currentlyPressedKeys[68]) // (D) Right
 		{
-			vehicle.turnRight(1000) ;
+		    if(camera_mode === 1){
+		        helico.turnRight(1000);
+            }else {
+                vehicle.turnRight(1000);
+            }
 		}
 		if (currentlyPressedKeys[81]) // (Q) Left 
-		{		
-			vehicle.turnLeft(1000) ;
+		{
+            if(camera_mode === 1){
+                helico.turnLeft(1000);
+            }else {
+                vehicle.turnLeft(1000);
+            }
 		}
 		if (currentlyPressedKeys[90]) // (Z) Up
 		{
-			vehicle.goFront(1200, 1200) ;
+            if(camera_mode === 1){
+                helico.goFront(1200, 1200);
+            }else {
+                vehicle.goFront(1200, 1200);
+            }
 		}
 		if (currentlyPressedKeys[83]) // (S) Down 
 		{
-			vehicle.brake(100) ;
+            if(camera_mode === 1){
+                helico.brake(100);
+            }else {
+                vehicle.brake(100);
+            }
 		}
+        if(camera_mode === 1) {
+            if (currentlyPressedKeys[65]) // (A)
+            {
+                helico.position.z += 0.5;
+            }
+            if (currentlyPressedKeys[69]) // (E)
+            {
+                helico.position.z -= 0.5;
+            }
+        }
 	}
 
 	function switchCamera(){
-		camera_index = (camera_index + 1) % 3;
-		if(camera_index === 0){
+		camera_mode = (camera_mode + 1) % 3;
+		if(camera_mode === 0){
             setEmbeddedCamera();
-		}else if(camera_index === 1){
+		}else if(camera_mode === 1){
             cameraPivot.remove(renderingEnvironment.camera);
 			setHelicoCamera();
 		}else{
@@ -301,8 +344,8 @@ function start()
     function setHelicoCamera(){
 		helico_body.add(renderingEnvironment.camera);
         renderingEnvironment.camera.position.x = 0.0;
-        renderingEnvironment.camera.position.z = 40.0;
-        renderingEnvironment.camera.position.y = -5.0;
+        renderingEnvironment.camera.position.z = 50.0;
+        renderingEnvironment.camera.position.y = -15.0;
         renderingEnvironment.camera.rotation.y = 0;
         renderingEnvironment.camera.rotation.z = 0;
         renderingEnvironment.camera.rotation.x = 30.0*Math.PI/180.0;
@@ -354,6 +397,7 @@ function start()
 	function render() {
 		requestAnimationFrame( render );
 		handleKeys();
+        var deltaTime = clock.getDelta();
 		// Vehicle stabilization 
 		vehicle.goUp(vehicle.weight()/4.0, vehicle.weight()/4.0, vehicle.weight()/4.0, vehicle.weight()/4.0) ;
 		vehicle.stopAngularSpeedsXY() ;
@@ -378,20 +422,29 @@ function start()
 		carRotationZ.rotation.z = vehicle.angles.z-Math.PI/2.0 ;
 
 		var helico_speed = Math.floor(Math.sqrt(Math.pow(helico.speed.x, 2) + Math.pow(helico.speed.y, 2) + Math.pow(helico.speed.z, 2)));
-        var delta_rotation_speed = 0.2 + helico_speed * 0.1;
+        var delta_rotation_speed = 0.2 + helico_speed * 0.05;
 		helico_central_axis.rotation.y += delta_rotation_speed;
         helico_right_axis.rotation.y += delta_rotation_speed;
         helico_left_axis.rotation.y += delta_rotation_speed;
 
+        helico.goUp(helico.weight()/4.0, helico.weight()/4.0, helico.weight()/4.0, helico.weight()/4.0) ;
+        helico.stopAngularSpeedsXY() ;
+        helico.stabilizeSkid(50) ;
+        helico.stabilizeTurn(1000) ;
+        helico.update(1/60);
+        helico_position.position.set(helico.position.x, helico.position.y, helico.position.z);
+        helico_rotationZ.rotation.z = helico.angles.z-Math.PI/2;
+        // console.log(helico_position.position.x, helico_position.position.y);
+
         var plane = parseInt(NAV.findActive(NAV.x, NAV.y), 10);
-		if(camera_index === 2)
+		if(camera_mode === 2)
 		{
 			renderingEnvironment.camera.position.x = cameraSet[plane].x ;
 			renderingEnvironment.camera.position.y = cameraSet[plane].y ;
 			renderingEnvironment.camera.position.z = NAV.z + cameraZ ;
 			renderingEnvironment.camera.up = new THREE.Vector3(0,0,1);
 			renderingEnvironment.camera.lookAt(NAV);
-		}else if(camera_index === 0){
+		}else if(camera_mode === 0){
             var pivot = vehicle.angularSpeed.z / 9;
 		    cameraPivot.rotation.z = pivot > Math.PI / 2 ? Math.PI / 2 : pivot < - Math.PI / 2 ? - Math.PI / 2 : pivot;
 		    renderingEnvironment.camera.up = renderingEnvironment.up;
@@ -409,8 +462,8 @@ function start()
         }else if(plane > prevPlane){
             wrongDirectionDiv.innerHTML = '';
             if(plane === 1) {
-                if(!clock.running){
-                    clock.start();
+                if(!timer.running){
+                    timer.start();
                 }
                 var lapOK = true;
                 for (var i = 0; i < nbCheckpoints && lapOK; i++) {
@@ -421,7 +474,7 @@ function start()
                 if (lapOK) {
                     resetCheckpoints();
                     nbLaps++;
-                    var lapTime = clock.getElapsedTime();
+                    var lapTime = timer.getElapsedTime();
                     timeBoardString +=   nbLaps + ' : ' + Math.floor((lapTime - lastLapTime) * 100) / 100 + '\n';
                     lastLapTime = lapTime;
                 }
@@ -430,7 +483,33 @@ function start()
 		    wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
         }
         speed = Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
-        clockDiv.innerText = Math.floor(clock.getElapsedTime() * 100) / 100 + '';
+        particleSystems.forEach(function(ps){
+            if(ps.name === "fountain"){
+
+            }else {
+                var animate = false;
+                if (ps.name === "jetFire" && speed > 0 && speed <= 100) {
+                    animate = true;
+                } else if (ps.name === "turboFire" && speed > 100) {
+                    animate = true;
+                }
+                if (animate) {
+                    if (!ps.isActive) {
+                        particlesPlaceHolder.remove(ps.particles.particleSystem);
+                        ps.object.add(ps.particles.particleSystem);
+                        ps.isActive = true;
+                    }
+                } else {
+                    if (ps.isActive) {
+                        ps.object.remove(ps.particles.particleSystem);
+                        particlesPlaceHolder.add(ps.particles.particleSystem);
+                        ps.isActive = false;
+                    }
+                }
+            }
+            ps.particles.animate(deltaTime, renderingEnvironment);
+        });
+        timerDiv.innerText = Math.floor(timer.getElapsedTime() * 100) / 100 + '';
 		timeBoardDiv.innerText = timeBoardString;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera);
