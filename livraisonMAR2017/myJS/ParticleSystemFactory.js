@@ -16,25 +16,25 @@ function addParticlesToCar(carGeometry, particleSystems){
     var positionRight = {x: 2.8, y: -7, z: 1.5};
     var jfpsRight = createJetFireParticleSystem(positionRight);
     particleSystems.push({
-        name:"jetFire", particles:jfpsRight, object:carGeometry, isActive: true
+        name:"jetFire", particles:jfpsRight, object:carGeometry, isActive: false
     });
-    carGeometry.add(jfpsRight.particleSystem);
+    //carGeometry.add(jfpsRight.particleSystem);
     var positionLeft = {x: -2.8, y: -7, z: 1.5};
     var jfpsLeft = createJetFireParticleSystem(positionLeft);
     particleSystems.push({
-        name:"jetFire", particles:jfpsLeft, object:carGeometry, isActive: true
+        name:"jetFire", particles:jfpsLeft, object:carGeometry, isActive: false
     });
-    carGeometry.add(jfpsLeft.particleSystem);
+    //carGeometry.add(jfpsLeft.particleSystem);
     var tfpsRight = createTurboFireParticleSystem(positionRight);
     particleSystems.push({
-        name:"turboFire", particles:tfpsRight, object:carGeometry, isActive: true
+        name:"turboFire", particles:tfpsRight, object:carGeometry, isActive: false
     });
-    carGeometry.add(tfpsRight.particleSystem);
+    //carGeometry.add(tfpsRight.particleSystem);
     var tfpsLeft = createTurboFireParticleSystem(positionLeft);
     particleSystems.push({
-        name:"turboFire", particles:tfpsLeft, object:carGeometry, isActive: true
+        name:"turboFire", particles:tfpsLeft, object:carGeometry, isActive: false
     });
-    carGeometry.add(tfpsLeft.particleSystem);
+    //carGeometry.add(tfpsLeft.particleSystem);
 }
 
 function createJetFireParticleSystem(position){
@@ -112,22 +112,21 @@ function createTurboFireParticleSystem(position){
 function createWaterFountainParticleSystem(position){
     var particleSystem = new ParticleSystem.Engine_Class({
         textureFile : "assets/particles/particle.png",
-        particlesCount : 10000,
+        particlesCount : 5000,
         blendingMode : THREE.AdditiveBlending
     });
-
     var emitter = new ParticleSystem.ConeEmitter_Class({
         cone: {
             center: new THREE.Vector3(position.x,position.y,position.z),
-            height: new THREE.Vector3(0,-1,1),
-            radius: 0.3,
-            flow: 1000
+            height: new THREE.Vector3(-0.5,0,1),
+            radius: 0.5,
+            flow: 100
         },
         particle: {
             speed: new MathExt.Interval_Class(10, 20),
             mass: new MathExt.Interval_Class(0.1, 0.1),
             size: new MathExt.Interval_Class(0.1, 4),
-            lifeTime: new MathExt.Interval_Class(0.5, 7)
+            lifeTime: new MathExt.Interval_Class(0.5, 10)
         }
     });
 
@@ -137,7 +136,7 @@ function createWaterFountainParticleSystem(position){
     particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
     particleSystem.addModifier(new ParticleSystem.PositionModifier_PlaneBounce_Class(
         new THREE.Vector3(0,0,0),
-        new THREE.Vector3(0,0,1),
+        new THREE.Vector3(-2,0,1),
         1
     ));
     particleSystem.addModifier(new ParticleSystem.OpacityModifier_TimeToDeath_Class(

@@ -13,7 +13,8 @@ requirejs(['ModulesLoaderV2.js'], function()
                 'myJS/ThreeLoadingEnv.js',
                 'myJS/navZ.js',
                 'FlyingVehicle.js',
-                "myJS/ParticleSystemFactory.js"
+                "myJS/ParticleSystemFactory.js",
+				'myJS/HelicoFactory.js'
             ]) ;
 			// Loads modules contained in includes and starts main function
 			ModulesLoader.loadModules(start) ;
@@ -76,6 +77,8 @@ function start()
 	//	Loading env
 	var Loader = new ThreeLoadingEnv();
 
+	var animateParticleSystems = true;
+
 	var particleSystems = [];
 
 	//	Meshes
@@ -109,9 +112,14 @@ function start()
 	carGeometry.position.z= +0.25 ;
 
     addParticlesToCar(carGeometry, particleSystems);
-    // var fountain = createWaterFountainParticleSystem({x:-137,y:-8,z:100});
-    // particleSystems.push({name:"fountain", particles:fountain});
-    // renderingEnvironment.addToScene(fountain.particleSystem);
+    var fountain_object = new THREE.Object3D();
+    fountain_object.position.x = -137;
+    fountain_object.position.y = -8;
+    fountain_object.position.z = 105;
+    var fountain = createWaterFountainParticleSystem({x:0,y:0,z:0});
+    particleSystems.push({name:"fountain", particles:fountain, object:fountain_object, isActive:true});
+    fountain_object.add(fountain.particleSystem);
+    renderingEnvironment.addToScene(fountain_object);
 
 	var cameraPivot = new THREE.Object3D();
 	carGeometry.add(cameraPivot);
@@ -133,63 +141,8 @@ function start()
         }
     ) ;
 
-    var helico_position = new THREE.Object3D();
-    renderingEnvironment.addToScene(helico_position);
-    helico_position.position.x = HELICOx;
-    helico_position.position.y = HELICOy;
-    helico_position.position.z = HELICOz;
-
-    var helico_rotationZ = new THREE.Object3D();
-    helico_position.add(helico_rotationZ);
-
-    var helico_left_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
-    helico_left_turbine.position.x = -8.5;
-    helico_left_turbine.position.y = -3;
-    helico_left_turbine.position.z = 4;
-
-    var helico_left_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
-    helico_left_axis.position.x = -8.5;
-    helico_left_axis.position.y = -2;
-    helico_left_axis.position.z = 4;
-
-    var helico_right_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
-    helico_right_turbine.position.x = 8.5;
-    helico_right_turbine.position.y = -3;
-    helico_right_turbine.position.z = 4;
-
-    var helico_right_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
-    helico_right_axis.position.x = 8.5;
-    helico_right_axis.position.y = -2;
-    helico_right_axis.position.z = 4;
-
-    var helico_central_turbine = Loader.load({filename:"assets/helico/turbine.obj", node: helico_rotationZ});
-    helico_central_turbine.position.x = 0;
-    helico_central_turbine.position.y = 0;
-    helico_central_turbine.position.z = 4;
-    helico_central_turbine.rotation.x = Math.PI / 2;
-
-    var helico_central_axis = Loader.load({filename:"assets/helico/axe.obj", node: helico_rotationZ});
-    helico_central_axis.position.x = 0;
-    helico_central_axis.position.y = 0;
-    helico_central_axis.position.z = 5;
-    helico_central_axis.rotation.x = Math.PI / 2;
-
-    var nbBlades = 3;
-
-    for(var i = 0; i < nbBlades; i++){
-        var angle = (i + 1)*(2 * Math.PI / nbBlades);
-        var right_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_right_axis});
-        right_blade.position.y = 2;
-        right_blade.rotation.y = angle;
-        var left_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_left_axis});
-        left_blade.position.y = 2;
-        left_blade.rotation.y = angle;
-        var central_blade = Loader.load({filename:"assets/helico/pale.obj", node: helico_central_axis});
-        central_blade.position.y = 2;
-        central_blade.rotation.y = angle;
-    }
-
-    var helico_body = Loader.load({filename:"assets/helico/helicoCorp.obj", node: helico_rotationZ});
+    var helico_model = Helico({x:HELICOx, y:HELICOy, z: HELICOz}, Loader);
+    renderingEnvironment.addToScene(helico_model.helico_position);
 
     //	Skybox
 	Loader.loadSkyBox('assets/maps',['px','nx','py','ny','pz','nz'],'jpg', renderingEnvironment.scene, 'sky',4000);
@@ -244,6 +197,8 @@ function start()
 	var timer = new THREE.Clock(false);
     var lastLapTime = 0;
 
+    var frames = 0;
+
 	resetCheckpoints();
 
 	var camera_mode = 0; // 0 => car, 1 => helico, 2 => cinematic
@@ -263,15 +218,36 @@ function start()
 	var wrongDirectionDiv = document.getElementById('wrong-direction');
 	var timerDiv = document.getElementById('timer');
 	var timeBoardDiv = document.getElementById('time-board');
+	var fpsDiv = document.getElementById('fps');
 	var timeBoardString = 'Laps :\n';
 	var prevPlane = 0;
 	//	callback functions
 	//	---------------------------------------------------------------------------
-	function handleKeyDown(event) {//65 69
-		if(event.keyCode === 80)
+	function handleKeyDown(event) {
+		if(event.keyCode === 80) // (P)
 		{
 		    switchCamera();
-		}else{
+		}
+		else if(event.keyCode=== 70)// (F)
+        {
+            animateParticleSystems = !animateParticleSystems;
+            if(!animateParticleSystems)
+            {
+                particleSystems.forEach(function(ps){
+                    ps.object.remove(ps.particles.particleSystem);
+                    particlesPlaceHolder.add(ps.particles.particleSystem);
+                    ps.isActive = false;
+                });
+            }else{
+                particleSystems.forEach(function(ps){
+                    particlesPlaceHolder.remove(ps.particles.particleSystem);
+                    ps.object.add(ps.particles.particleSystem);
+                    ps.isActive = true;
+                });
+            }
+        }
+        else
+        {
 			currentlyPressedKeys[event.keyCode] = true;
 		}
 	}
@@ -284,48 +260,46 @@ function start()
 			renderingEnvironment.scene.traverse(function(o){
 				console.log('object:'+o.name+'>'+o.id+'::'+o.type);
 			});
-		}				
-		if (currentlyPressedKeys[68]) // (D) Right
-		{
-		    if(camera_mode === 1){
-		        helico.turnRight(1000);
-            }else {
-                vehicle.turnRight(1000);
-            }
 		}
-		if (currentlyPressedKeys[81]) // (Q) Left 
-		{
-            if(camera_mode === 1){
-                helico.turnLeft(1000);
-            }else {
-                vehicle.turnLeft(1000);
-            }
-		}
-		if (currentlyPressedKeys[90]) // (Z) Up
-		{
-            if(camera_mode === 1){
-                helico.goFront(1200, 1200);
-            }else {
-                vehicle.goFront(1200, 1200);
-            }
-		}
-		if (currentlyPressedKeys[83]) // (S) Down 
-		{
-            if(camera_mode === 1){
-                helico.brake(100);
-            }else {
-                vehicle.brake(100);
-            }
-		}
-        if(camera_mode === 1) {
-            if (currentlyPressedKeys[65]) // (A)
-            {
-                helico.position.z += 0.5;
-            }
-            if (currentlyPressedKeys[69]) // (E)
-            {
-                helico.position.z -= 0.5;
-            }
+        if (currentlyPressedKeys[33]) // (Page Up)
+        {
+            helico.position.z += 0.5;
+        }
+        if (currentlyPressedKeys[34]) // (Page Down)
+        {
+            helico.position.z -= 0.5;
+        }
+        if(currentlyPressedKeys[38]) // (Up)
+        {
+            helico.goFront(1200, 1200);
+        }
+        if(currentlyPressedKeys[37]) // (Left)
+        {
+            helico.turnLeft(1000);
+        }
+        if(currentlyPressedKeys[40]) // (Down)
+        {
+            helico.brake(100);
+        }
+        if(currentlyPressedKeys[39]) // (Right)
+        {
+            helico.turnRight(1000);
+        }
+        if (currentlyPressedKeys[68]) // (D) Right
+        {
+            vehicle.turnRight(1000);
+        }
+        if (currentlyPressedKeys[81]) // (Q) Left
+        {
+            vehicle.turnLeft(1000);
+        }
+        if (currentlyPressedKeys[90]) // (Z) Up
+        {
+            vehicle.goFront(1200, 1200);
+        }
+        if (currentlyPressedKeys[83]) // (S) Down
+        {
+            vehicle.brake(100);
         }
 	}
 
@@ -337,12 +311,12 @@ function start()
             cameraPivot.remove(renderingEnvironment.camera);
 			setHelicoCamera();
 		}else{
-			helico_body.remove(renderingEnvironment.camera);
+			helico_model.helico_body.remove(renderingEnvironment.camera);
 		}
     }
 
     function setHelicoCamera(){
-		helico_body.add(renderingEnvironment.camera);
+        helico_model.helico_body.add(renderingEnvironment.camera);
         renderingEnvironment.camera.position.x = 0.0;
         renderingEnvironment.camera.position.z = 50.0;
         renderingEnvironment.camera.position.y = -15.0;
@@ -393,10 +367,12 @@ function start()
 	{
 		renderingEnvironment.onWindowResize(window.innerWidth,window.innerHeight);
 	}
-
+    var fpsRefreshRate = 10;
+    var deltaRefreshTime = 0;
 	function render() {
 		requestAnimationFrame( render );
 		handleKeys();
+		frames++;
         var deltaTime = clock.getDelta();
 		// Vehicle stabilization 
 		vehicle.goUp(vehicle.weight()/4.0, vehicle.weight()/4.0, vehicle.weight()/4.0, vehicle.weight()/4.0) ;
@@ -423,17 +399,17 @@ function start()
 
 		var helico_speed = Math.floor(Math.sqrt(Math.pow(helico.speed.x, 2) + Math.pow(helico.speed.y, 2) + Math.pow(helico.speed.z, 2)));
         var delta_rotation_speed = 0.2 + helico_speed * 0.05;
-		helico_central_axis.rotation.y += delta_rotation_speed;
-        helico_right_axis.rotation.y += delta_rotation_speed;
-        helico_left_axis.rotation.y += delta_rotation_speed;
+        helico_model.helico_central_axis.rotation.y += delta_rotation_speed;
+        helico_model.helico_right_axis.rotation.y += delta_rotation_speed;
+        helico_model.helico_left_axis.rotation.y += delta_rotation_speed;
 
         helico.goUp(helico.weight()/4.0, helico.weight()/4.0, helico.weight()/4.0, helico.weight()/4.0) ;
         helico.stopAngularSpeedsXY() ;
         helico.stabilizeSkid(50) ;
         helico.stabilizeTurn(1000) ;
         helico.update(1/60);
-        helico_position.position.set(helico.position.x, helico.position.y, helico.position.z);
-        helico_rotationZ.rotation.z = helico.angles.z-Math.PI/2;
+        helico_model.helico_position.position.set(helico.position.x, helico.position.y, helico.position.z);
+        helico_model.helico_rotationZ.rotation.z = helico.angles.z-Math.PI/2;
         // console.log(helico_position.position.x, helico_position.position.y);
 
         var plane = parseInt(NAV.findActive(NAV.x, NAV.y), 10);
@@ -483,34 +459,43 @@ function start()
 		    wrongDirectionDiv.innerHTML = 'WRONG DIRECTION !';
         }
         speed = Math.floor(Math.sqrt(Math.pow(vehicle.speed.x, 2) + Math.pow(vehicle.speed.y, 2) + Math.pow(vehicle.speed.z, 2)));
-        particleSystems.forEach(function(ps){
-            if(ps.name === "fountain"){
+        if(animateParticleSystems) {
+            particleSystems.forEach(function (ps) {
+                if (ps.name === "fountain") {
 
-            }else {
-                var animate = false;
-                if (ps.name === "jetFire" && speed > 0 && speed <= 100) {
-                    animate = true;
-                } else if (ps.name === "turboFire" && speed > 100) {
-                    animate = true;
-                }
-                if (animate) {
-                    if (!ps.isActive) {
-                        particlesPlaceHolder.remove(ps.particles.particleSystem);
-                        ps.object.add(ps.particles.particleSystem);
-                        ps.isActive = true;
-                    }
                 } else {
-                    if (ps.isActive) {
-                        ps.object.remove(ps.particles.particleSystem);
-                        particlesPlaceHolder.add(ps.particles.particleSystem);
-                        ps.isActive = false;
+                    var animate = false;
+                    if (ps.name === "jetFire" && speed > 0 && speed <= 100) {
+                        animate = true;
+                    } else if (ps.name === "turboFire" && speed > 100) {
+                        animate = true;
+                    }
+                    if (animate) {
+                        if (!ps.isActive) {
+                            particlesPlaceHolder.remove(ps.particles.particleSystem);
+                            ps.object.add(ps.particles.particleSystem);
+                            ps.isActive = true;
+                        }
+                    } else {
+                        if (ps.isActive) {
+                            ps.object.remove(ps.particles.particleSystem);
+                            particlesPlaceHolder.add(ps.particles.particleSystem);
+                            ps.isActive = false;
+                        }
                     }
                 }
-            }
-            ps.particles.animate(deltaTime, renderingEnvironment);
-        });
+                ps.particles.animate(deltaTime, renderingEnvironment);
+            });
+        }
         timerDiv.innerText = Math.floor(timer.getElapsedTime() * 100) / 100 + '';
 		timeBoardDiv.innerText = timeBoardString;
+        if(frames === fpsRefreshRate){
+            fpsDiv.innerText = 'FPS = ' + Math.floor(fpsRefreshRate / deltaRefreshTime);
+            frames = 0;
+            deltaRefreshTime = 0;
+        }else{
+            deltaRefreshTime += deltaTime;
+        }
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera);
 		prevPlane = plane;
