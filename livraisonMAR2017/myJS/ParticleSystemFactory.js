@@ -152,8 +152,8 @@ function createWaterFountainParticleSystem(position){
 //TODO
 function createSmokeParticleSystem(position){
     var particleSystem = new ParticleSystem.Engine_Class({
-        textureFile : "assets/particles/particle.jpg",
-        particlesCount : 1000,
+        textureFile : "assets/particles/particle.png",
+        particlesCount : 10000,
         blendingMode : THREE.AdditiveBlending
     });
 
@@ -161,26 +161,26 @@ function createSmokeParticleSystem(position){
         cone: {
             center: new THREE.Vector3(position.x,position.y,position.z),
             height: new THREE.Vector3(0,0,1),
-            radius: 1,
-            flow: 100
+            radius: 10,
+            flow: 1000
         },
         particle: {
             speed: new MathExt.Interval_Class(4, 5),
-            mass: new MathExt.Interval_Class(-1, -1),
-            size: new MathExt.Interval_Class(0.1, 10),
-            lifeTime: new MathExt.Interval_Class(0.5, 5)
+            mass: new MathExt.Interval_Class(1, 1),
+            size: new MathExt.Interval_Class(0.1, 1),
+            lifeTime: new MathExt.Interval_Class(0.5, 10)
         }
     });
 
     particleSystem.addEmitter(emitter);
     particleSystem.addModifier(new ParticleSystem.LifeTimeModifier_Class());
-    // particleSystem.addModifier(new ParticleSystem.ForceModifier_Weight_Class());
+    particleSystem.addModifier(new ParticleSystem.ForceModifier_Weight_Class());
     particleSystem.addModifier(new ParticleSystem.PositionModifier_EulerItegration_Class());
     particleSystem.addModifier(new ParticleSystem.OpacityModifier_TimeToDeath_Class(
-        new Interpolators.Linear_Class(0.7,0.9)
+        new Interpolators.Linear_Class(1,1)
     ));
     particleSystem.addModifier(new ParticleSystem.ColorModifier_TimeToDeath_Class(
-        {r:0.5,g:0.5,b:0.5},{r:0,g:0,b:0}
+        {r:0,g:0,b:0},{r:1,g:1,b:1}
     ));
 
     return particleSystem;

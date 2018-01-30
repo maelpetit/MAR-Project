@@ -70,9 +70,9 @@ function start()
 
 	// addParticleSystem(createParticleSystem1);
     // addParticleSystem(createTurboFireParticleSystem);
-	// addParticleSystem(createJetFireParticleSystem);
-	// addParticleSystem(createSmokeParticleSystem);
-	addParticleSystem(createWaterFountainParticleSystem);
+    // addParticleSystem(createJetFireParticleSystem);
+	addParticleSystem(createSmokeParticleSystem);
+	// addParticleSystem(createWaterFountainParticleSystem);
 	renderingEnvironment.addToScene(object);
 
 	/*var node = new THREE.Object3D({
@@ -146,7 +146,7 @@ function start()
 		particleSystems.forEach(function(ps){
 			ps.animate(deltaTime, renderingEnvironment);
 		});
-		// object.rotation.z += 0.02;
+		// object.rotation.x += 0.02;
 		// Rendering
 		renderingEnvironment.renderer.render(renderingEnvironment.scene, renderingEnvironment.camera); 
 	}

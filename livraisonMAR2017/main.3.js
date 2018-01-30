@@ -65,8 +65,8 @@ function start()
 	cameraSet[26] = cameraSet[27] = cameraSet[28] = camera8 ;
 	cameraSet[29] = camera1;
 
-    // google.charts.load('current', {'packages':['gauge']});
-    // google.charts.setOnLoadCallback(drawChart);
+    google.charts.load('current', {'packages':['gauge']});
+    google.charts.setOnLoadCallback(drawChart);
  	
 	//	rendering env
 	var renderingEnvironment =  new ThreeRenderingEnv();
@@ -410,7 +410,6 @@ function start()
         helico.update(1/60);
         helico_model.helico_position.position.set(helico.position.x, helico.position.y, helico.position.z);
         helico_model.helico_rotationZ.rotation.z = helico.angles.z-Math.PI/2;
-        // console.log(helico_position.position.x, helico_position.position.y);
 
         var plane = parseInt(NAV.findActive(NAV.x, NAV.y), 10);
 		if(camera_mode === 2)
