@@ -125,7 +125,7 @@ function createWaterFountainParticleSystem(position){
         particle: {
             speed: new MathExt.Interval_Class(10, 20),
             mass: new MathExt.Interval_Class(0.1, 0.1),
-            size: new MathExt.Interval_Class(0.1, 4),
+            size: new MathExt.Interval_Class(0.1, 10),
             lifeTime: new MathExt.Interval_Class(0.5, 10)
         }
     });
